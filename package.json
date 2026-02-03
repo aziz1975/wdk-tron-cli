@@ -1,0 +1,16 @@
+{
+  "name": "wdk-tron-cli",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node cli.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@tetherto/wdk-wallet-tron": "^1.0.0-beta.4",
+    "dotenv": "^17.2.3"
+  }
+}
