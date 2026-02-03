@@ -23,6 +23,12 @@ function parseBigIntStrict(label, s) {
   return BigInt(str);
 }
 
+function readBigIntEnv(name) {
+  const v = process.env[name];
+  if (v === undefined || v === "") return undefined;
+  return parseBigIntStrict(name, v);
+}
+
 /**
  * Convert TRX human amount -> sun (smallest unit).
  * Uses BigInt to avoid floating issues for typical demo amounts.
@@ -85,6 +91,7 @@ Notes:
   - TRX smallest unit is sun: 1 TRX = 1,000,000 sun
   - TRC20 amounts are base units (e.g., if token has 6 decimals: 1.0 token = 1000000 base units)
   - token-balance default token (if not provided): Shasta USDT example contract
+  - Optional fee cap: TRANSFER_MAX_FEE_SUN
 `.trim()
   );
 }
@@ -97,18 +104,23 @@ async function main() {
   const provider = checkEnv("TRON_PROVIDER");
 
   // WDK config supports transferMaxFee (in sun). Optional.
-  const transferMaxFee = process.env.TRANSFER_MAX_FEE_SUN
-    ? BigInt(process.env.TRANSFER_MAX_FEE_SUN)
-    : undefined;
+  const transferMaxFee = readBigIntEnv("TRANSFER_MAX_FEE_SUN");
 
-  const wallet = new WalletManagerTron(seedPhrase, {
-    provider,
-    ...(transferMaxFee !== undefined ? { transferMaxFee } : {})
-  });
+  async function createAccount(transferMaxFeeOverride) {
+    const wallet = new WalletManagerTron(seedPhrase, {
+      provider,
+      ...(transferMaxFeeOverride !== undefined ? { transferMaxFee: transferMaxFeeOverride } : {})
+    });
+    const account = await wallet.getAccount(0);
+    return { wallet, account };
+  }
 
-  const account = await wallet.getAccount(0);
+  let wallet;
+  let account;
 
   try {
+    ({ wallet, account } = await createAccount(transferMaxFee));
+
     if (cmd === "address") {
       console.log(await account.getAddress());
       return;
@@ -186,9 +198,9 @@ async function main() {
       const value = parseBigIntStrict("tokenAmountBase", tokenAmountBase);
 
       const quote = await account.quoteTransfer({
-        to,
-        tokenAddress,
-        value
+        token: tokenAddress,
+        recipient: to,
+        amount: value
       });
 
       console.log("Token:", tokenAddress);
@@ -196,6 +208,10 @@ async function main() {
       console.log("Amount (base units):", asString(value));
       console.log("Estimated fee (sun):", asString(quote.fee));
       console.log("Estimated fee (TRX):", sunToTrxString(quote.fee), "TRX");
+      if (transferMaxFee !== undefined) {
+        console.log("Max fee cap (sun):", asString(transferMaxFee));
+        console.log("Max fee cap (TRX):", sunToTrxString(transferMaxFee), "TRX");
+      }
       return;
     }
 
@@ -210,16 +226,29 @@ async function main() {
 
       // Estimate first
       const quote = await account.quoteTransfer({
-        to,
-        tokenAddress,
-        value
+        token: tokenAddress,
+        recipient: to,
+        amount: value
       });
       console.log("Estimated fee (TRX):", sunToTrxString(quote.fee), "TRX");
 
+      if (transferMaxFee !== undefined) {
+        console.log("Max fee cap (sun):", asString(transferMaxFee));
+        console.log("Max fee cap (TRX):", sunToTrxString(transferMaxFee), "TRX");
+
+        if (quote.fee >= transferMaxFee) {
+          throw new Error(
+            `Estimated fee ${sunToTrxString(quote.fee)} TRX exceeds max fee cap ` +
+            `${sunToTrxString(transferMaxFee)} TRX. Increase TRANSFER_MAX_FEE_SUN ` +
+            `or unset it.`
+          );
+        }
+      }
+
       const result = await account.transfer({
-        to,
-        tokenAddress,
-        value
+        token: tokenAddress,
+        recipient: to,
+        amount: value
       });
 
       console.log("Transfer hash:", result.hash);
@@ -250,8 +279,8 @@ async function main() {
 
     usage();
   } finally {
-    account.dispose();
-    wallet.dispose();
+    account?.dispose();
+    wallet?.dispose();
   }
 }
 
