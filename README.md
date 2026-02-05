@@ -1,6 +1,7 @@
 # wdk-tron-cli
 
-A small Node.js CLI demo for **TRON** using **Tether WDK**.
+A Node.js CLI demo project for building and testing **TRON** wallet actions with **Tether WDK**, including basic Shasta wallet commands and a GasFree TRC20 transfer flow on Nile.
+
 
 It includes two scripts:
 
