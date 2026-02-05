@@ -12,7 +12,7 @@ It includes two scripts:
 ## Requirements
 
 - **Node.js 20+** (recommended)  
-  This project uses `fetch()`, which is built-in in Node 18+.
+
 - **npm**
 
 ---
