@@ -29,9 +29,10 @@ function usageAndExit() {
 GasFree Nile CLI (WDK)
 
 Transfer:
-  node gasfree-nile.js <recipient> <amountBase> [tokenContract] [maxFee]
+  node gasfree-nile.js transfer <recipient> <amountBase> [tokenContract] [maxFee]
 
 Commands:
+  node gasfree-nile.js transfer <recipient> <amountBase> [tokenContract] [maxFee]
   node gasfree-nile.js status
   node gasfree-nile.js tokens [tokenContract]
   node gasfree-nile.js providers
@@ -59,7 +60,7 @@ Optional env overrides:
 
 Examples:
 
-  node gasfree-nile.js TQGfKPHs3AwiBT44ibkCU64u1G4ttojUXU 5000000
+  node gasfree-nile.js transfer TQGfKPHs3AwiBT44ibkCU64u1G4ttojUXU 5000000
 
   node gasfree-nile.js status
   node gasfree-nile.js tokens
@@ -453,20 +454,13 @@ async function main() {
   };
 
   try {
-    // If the first arg is a TRON address, treat it as a transfer call.
-    if (isTronAddress(arg1)) {
-      const recipient = arg1;
-      const amountBaseStr = process.argv[3];
-      const tokenArg = process.argv[4];
-      const maxFeeArg = process.argv[5];
-
-      if (!amountBaseStr) usageAndExit();
-      await runTransfer(ctx, recipient, amountBaseStr, tokenArg, maxFeeArg);
-      return;
-    }
-
     const command = arg1;
     const args = process.argv.slice(3);
+
+    if (command === "transfer") {
+      await runTransfer(ctx, args[0], args[1], args[2], args[3]);
+      return;
+    }
 
     if (command === "status") {
       await cmdStatus(ctx);
@@ -496,6 +490,10 @@ async function main() {
     if (command === "activate") {
       await cmdActivate(ctx, args[0], args[1], args[2]);
       return;
+    }
+
+    if (isTronAddress(command)) {
+      throw new Error("Missing command: use 'transfer <recipient> <amountBase> [tokenContract] [maxFee]'");
     }
 
     usageAndExit();

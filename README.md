@@ -1,12 +1,12 @@
 # wdk-tron-cli
 
-A Node.js CLI demo project for building and testing **TRON** wallet actions with **Tether WDK**, including basic Shasta wallet commands and a GasFree TRC20 transfer flow on Nile.
+A Node.js CLI demo project for building and testing **TRON** wallet actions with **Tether WDK**, including basic Shasta wallet commands and a Nile GasFree CLI for status, token/provider discovery, fee checks, activation, and TRC20 transfers.
 
 
 It includes two scripts:
 
 - **`cli.js`**: Basic wallet actions on **Shasta** (address, balance, TRX send, TRC20 balance, TRC20 send, sign/verify).
-- **`gasfree-nile.js`**: A **GasFree** demo on **Nile** for sending a TRC20 token using `@tetherto/wdk-wallet-tron-gasfree`.
+- **`gasfree-nile.js`**: A **GasFree** CLI demo on **Nile** (status, tokens, providers, balance, fee, activate, transfer) using `@tetherto/wdk-wallet-tron-gasfree`.
 
 ---
 
@@ -230,35 +230,118 @@ npm start -- verify "hello shasta" "0x60a7faea867ca62af25c6494c4b0452cb56847229c
 
 ## How to run `gasfree-nile.js` (Nile GasFree)
 
-Run it directly with Node:
+Run it directly with Node.
+
+`gasfree-nile.js` supports:
+
+- **Transfer mode** (`transfer` command)
+- **Command mode** (`status`, `tokens`, `providers`, `balance`, `fee`, `activate`)
+
+### Command reference
 
 ```bash
-node gasfree-nile.js <recipient> <amountBase> [tokenContract] [maxFee]
+node gasfree-nile.js status
+node gasfree-nile.js tokens [tokenContract]
+node gasfree-nile.js providers
+node gasfree-nile.js balance [tokenContract]
+node gasfree-nile.js fee <recipient> <amountBase> [tokenContract]
+node gasfree-nile.js activate <recipient> [tokenContract] [maxFee]
+node gasfree-nile.js transfer <recipient> <amountBase> [tokenContract] [maxFee]
+```
+
+### 1) Status
+
+```bash
+node gasfree-nile.js status
+```
+
+Shows owner/sender address, `active`, `allow_submit`, provider, RPC, service provider, and verifying contract.
+
+### 2) Tokens list
+
+```bash
+node gasfree-nile.js tokens
+```
+
+### 3) Tokens filter
+
+```bash
+node gasfree-nile.js tokens TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf
+```
+
+### 4) Providers
+
+```bash
+node gasfree-nile.js providers
+```
+
+### 5) Balance
+
+```bash
+node gasfree-nile.js balance
+```
+
+With explicit token:
+
+```bash
+node gasfree-nile.js balance TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf
+```
+
+### 6) Fee estimate
+
+```bash
+node gasfree-nile.js fee TQGfKPHs3AwiBT44ibkCU64u1G4ttojUXU 5000000
+```
+
+With explicit token:
+
+```bash
+node gasfree-nile.js fee TQGfKPHs3AwiBT44ibkCU64u1G4ttojUXU 5000000 TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf
+```
+
+### 7) Activate
+
+```bash
+node gasfree-nile.js activate TQGfKPHs3AwiBT44ibkCU64u1G4ttojUXU
+```
+
+With explicit token and max fee:
+
+```bash
+node gasfree-nile.js activate TQGfKPHs3AwiBT44ibkCU64u1G4ttojUXU TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf 300000
+```
+
+`activate` sends a tiny transfer of `1` base unit to trigger activation flow when needed.
+
+### 8) Transfer (existing mode)
+
+```bash
+node gasfree-nile.js transfer <recipient> <amountBase> [tokenContract] [maxFee]
 ```
 
 Arguments:
 
 - `recipient`  
-  A TRON address like `T...`
+  TRON address like `T...`
 
 - `amountBase`  
-  Token amount in **base units** (integer)
+  Token amount in **base units** (integer).  
+  Example: `1 USDT` with `6` decimals = `1000000`
 
 - `tokenContract` (optional)  
-  TRC20 token contract address. If not provided, it uses the default Nile token:
-
+  TRC20 token contract address. Default:
   - `TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf`
 
 - `maxFee` (optional)  
-  Max fee in **raw units** (integer). If provided, the script refuses to send if the required fee is higher than this value.
+  Max fee in **raw units** (integer). If provided, the transfer is cancelled when required fee is higher.
 
-Example (from testing):
+Example:
 
 ```bash
-node gasfree-nile.js TQGfKPHs3AwiBT44ibkCU64u1G4ttojUXU 5000000
+node gasfree-nile.js transfer TQGfKPHs3AwiBT44ibkCU64u1G4ttojUXU 5000000
 ```
 
-### What the script does
+### What transfer mode does
 
 1. Loads your wallet from `SEED_PHRASE` (account index `0`).
 2. Fetches your GasFree account status (active / allow_submit).
@@ -328,5 +411,12 @@ npm start -- send-token  TG3XXyExBkPp9nzdajDZsozEu4BkaSJozs TQGfKPHs3AwiBT44ibkC
 Nile GasFree:
 
 ```bash
-node gasfree-nile.js TQGfKPHs3AwiBT44ibkCU64u1G4ttojUXU 5000000
+node gasfree-nile.js status
+node gasfree-nile.js tokens
+node gasfree-nile.js tokens TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf
+node gasfree-nile.js providers
+node gasfree-nile.js balance
+node gasfree-nile.js fee TQGfKPHs3AwiBT44ibkCU64u1G4ttojUXU 5000000
+node gasfree-nile.js activate TQGfKPHs3AwiBT44ibkCU64u1G4ttojUXU
+node gasfree-nile.js transfer TQGfKPHs3AwiBT44ibkCU64u1G4ttojUXU 5000000
 ```
